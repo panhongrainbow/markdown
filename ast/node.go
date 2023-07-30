@@ -528,6 +528,15 @@ const (
 	SkipChildren
 	// Terminate tells walker to terminate the traversal.
 	Terminate
+	/*
+		Inquired Status:
+		Not all nodes require both "enter" and "leave" actions, especially when continuously retrieving values from table columns.
+		It is common to see a series of consecutive "enter" and "leave" actions.
+		In daily life, when I inquire about something, I don't necessarily have to physically enter someone's house to ask;
+		it suffices to inquire at the door. After asking, I can move on to ask others.
+		Therefore, this state is referred to as "Inquired."
+	*/
+	Inquired
 )
 
 // NodeVisitor is a callback to be called when traversing the syntax tree.
@@ -560,7 +569,11 @@ func Walk(n Node, visitor NodeVisitor) WalkStatus {
 			}
 		}
 	}
-	if isContainer {
+
+	// Use a state called "Inquired" because not every node requires entering and leaving, so this field is used.
+	// For example, if a table has one hundred columns, when entering *ast.TableCell to retrieve the value,
+	// I will continuously observe the actions of entering and leaving being executed.
+	if isContainer && status != Inquired {
 		status = visitor.Visit(n, false) // exiting
 		if status == Terminate {
 			return status
