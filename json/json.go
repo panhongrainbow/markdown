@@ -1,15 +1,17 @@
 package json
 
 import (
-	"fmt"
 	"github.com/gomarkdown/markdown/ast"
 	"github.com/gomarkdown/markdown/parser"
+	"strings"
 	"unicode"
 )
 
 type JsonVisitor struct {
+	JsonDocs    []string
 	JsonDoc     []string
 	Header      []string
+	tableName   string
 	columnIndex int
 	location    struct {
 		inDocument, inTable, inTableHeader, inTableBody, inTableRow bool
@@ -29,11 +31,21 @@ func (visitor *JsonVisitor) Visit(node ast.Node, entering bool) (status ast.Walk
 		} else {
 			visitor.JsonDoc = append(visitor.JsonDoc, "}")
 		}
+	case *ast.Paragraph:
+		visitor.tableName = string(n.Content)
 	case *ast.Table:
+		if entering {
+			visitor.JsonDoc = append(visitor.JsonDoc, "\""+visitor.tableName+"\":")
+		}
 		visitor.location.inTable = entering
 		lastIndex := len(visitor.JsonDoc) - 1
 		if visitor.JsonDoc[lastIndex] == "," {
 			visitor.JsonDoc = visitor.JsonDoc[:lastIndex]
+		}
+		if !entering {
+			// save
+			visitor.JsonDocs = append(visitor.JsonDocs, strings.Join(visitor.JsonDoc, ""))
+			visitor.JsonDoc = visitor.JsonDoc[:0]
 		}
 	case *ast.TableHeader:
 		visitor.location.inTableHeader = entering
@@ -65,7 +77,6 @@ func (visitor *JsonVisitor) Visit(node ast.Node, entering bool) (status ast.Walk
 
 		if visitor.location.inTableBody {
 			if !isAllDigits(n.Content) {
-				fmt.Println(222, string(n.Content))
 				n.Content = Quotation(n.Content)
 			}
 
@@ -100,12 +111,12 @@ func isAllDigits(data []byte) bool {
 	return true
 }
 
-func Quotation(slice []byte) []byte {
-	newSlice := make([]byte, len(slice)+1)
-	newSlice[0] = 34
-	copy(newSlice[1:], slice)
-	newSlice = append(newSlice, 34)
-	return newSlice
+func Quotation(slice []byte) (quoted []byte) {
+	quoted = make([]byte, len(slice)+2, len(slice)+2)
+	quoted[0] = 34
+	quoted[len(quoted)-1] = 34
+	copy(quoted[1:], slice)
+	return
 }
 
 func mdToJson(md []byte) (jsonStr []string) {

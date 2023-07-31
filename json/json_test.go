@@ -7,13 +7,27 @@ import (
 	"testing"
 )
 
-var mds = `Name  | Age | Phone
+var mds = `contacts
+Name  | Age | Phone
 ------|-----|---------
 Bob   | 31  | 555-1234
 Alice | 27  | 555-4321
 `
 
 func Test_README(t *testing.T) {
+	var mds = `contacts
+Name  | Age | Phone
+------|-----|---------
+Bob   | 31  | 555-1234
+Alice | 27  | 555-4321
+
+contacts2
+Name  | Age | Phone
+------|-----|---------
+Bob1   | 31  | 555-1234
+Alice1 | 27  | 555-4321
+`
+
 	type Person struct {
 		Name  string `json:"Name"`
 		Age   int    `json:"Age"`
