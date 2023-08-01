@@ -1,4 +1,4 @@
-package json
+package md2json
 
 import (
 	"github.com/gomarkdown/markdown/ast"
@@ -16,26 +16,29 @@ type JsonVisitor struct {
 	location    struct {
 		inDocument, inTable, inTableHeader, inTableBody, inTableRow bool
 	}
+	visitorEmbeddedOpts
 }
 
-func NewJsonVisitor() *JsonVisitor {
-	return &JsonVisitor{}
-}
+const (
+	quot  string = "\""
+	colon string = ":"
+	comma string = ","
+)
 
 func (visitor *JsonVisitor) Visit(node ast.Node, entering bool) (status ast.WalkStatus) {
 	switch n := node.(type) {
 	case *ast.Document:
 		visitor.location.inDocument = entering
-		if entering {
-			visitor.JsonDoc = append(visitor.JsonDoc, "{")
-		} else {
-			visitor.JsonDoc = append(visitor.JsonDoc, "}")
-		}
 	case *ast.Paragraph:
 		visitor.tableName = string(n.Content)
 	case *ast.Table:
 		if entering {
-			visitor.JsonDoc = append(visitor.JsonDoc, "\""+visitor.tableName+"\":")
+			visitor.JsonDoc = append(visitor.JsonDoc, "{")
+			// visitor.JsonDoc = append(visitor.JsonDoc, "\""+visitor.tableName+"\":")
+			visitor.JsonDoc = append(visitor.JsonDoc, quot+"type"+quot+colon+quot+"table"+quot+comma+
+				quot+"name"+quot+colon+quot+visitor.tableName+quot+comma+
+				quot+"data"+quot+colon)
+			visitor.Header = visitor.Header[:0]
 		}
 		visitor.location.inTable = entering
 		lastIndex := len(visitor.JsonDoc) - 1
@@ -44,6 +47,7 @@ func (visitor *JsonVisitor) Visit(node ast.Node, entering bool) (status ast.Walk
 		}
 		if !entering {
 			// save
+			visitor.JsonDoc = append(visitor.JsonDoc, "}")
 			visitor.JsonDocs = append(visitor.JsonDocs, strings.Join(visitor.JsonDoc, ""))
 			visitor.JsonDoc = visitor.JsonDoc[:0]
 		}
@@ -76,7 +80,7 @@ func (visitor *JsonVisitor) Visit(node ast.Node, entering bool) (status ast.Walk
 		}
 
 		if visitor.location.inTableBody {
-			if !isAllDigits(n.Content) {
+			if !IsAllDigits(n.Content) {
 				n.Content = Quotation(n.Content)
 			}
 
@@ -102,7 +106,7 @@ func (visitor *JsonVisitor) closeJSONObject(closeTag string) {
 	}
 }
 
-func isAllDigits(data []byte) bool {
+func IsAllDigits(data []byte) bool {
 	for _, b := range data {
 		if !unicode.IsDigit(rune(b)) {
 			return false
@@ -119,14 +123,29 @@ func Quotation(slice []byte) (quoted []byte) {
 	return
 }
 
-func mdToJson(md []byte) (jsonStr []string) {
+func mdToJson(md []byte, optFuncs ...SetOptsFunc) (JsonDocs []string) {
 	extensions := parser.CommonExtensions | parser.AutoHeadingIDs | parser.NoEmptyLineBeforeBlock
 	p := parser.NewWithExtensions(extensions)
 	p.Block(md)
 
-	v := JsonVisitor{}
+	v := NewJsonVisitor(optFuncs...)
 
-	ast.Walk(p.Doc, &v)
+	ast.Walk(p.Doc, v)
 
-	return v.JsonDoc
+	return v.JsonDocs
+}
+
+func HasPrefix(a, b []byte) bool {
+	minLen := len(a)
+	if len(b) < minLen {
+		minLen = len(b)
+	}
+
+	for i := 0; i < minLen; i++ {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+
+	return true
 }
