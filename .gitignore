@@ -1,3 +1,4 @@
+# Settings for the gomarkdown project
 *.out
 *.swp
 *.8
@@ -11,3 +12,19 @@ markdown-fuzz.zip
 coverage.txt
 testdata/*_got.md
 testdata/*_ast.txt
+
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Dependency directories (remove the comment below to include it)
+vendor/
+
+# IntelliJ IDEA IDE-specific files and folders
+.idea/
