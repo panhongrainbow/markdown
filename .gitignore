@@ -1,4 +1,4 @@
-# Settings for the gomarkdown project
+# Configuration for the gomarkdown project
 *.out
 *.swp
 *.8
@@ -25,6 +25,9 @@ testdata/*_ast.txt
 
 # Dependency directories (remove the comment below to include it)
 vendor/
+
+# Configuration for multi-module workspaces in Go
+go.work
 
 # IntelliJ IDEA IDE-specific files and folders
 .idea/
