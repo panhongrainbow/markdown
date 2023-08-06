@@ -3,8 +3,14 @@ package md2json
 import (
 	"github.com/gomarkdown/markdown/ast"
 	"github.com/gomarkdown/markdown/parser"
+	"github.com/panhongrainbow/goCodePebblez/bytez"
 	"strings"
-	"unicode"
+)
+
+const (
+	quot  string = "\""
+	colon string = ":"
+	comma string = ","
 )
 
 type JsonVisitor struct {
@@ -19,22 +25,17 @@ type JsonVisitor struct {
 	visitorEmbeddedOpts
 }
 
-const (
-	quot  string = "\""
-	colon string = ":"
-	comma string = ","
-)
-
 func (visitor *JsonVisitor) Visit(node ast.Node, entering bool) (status ast.WalkStatus) {
 	switch n := node.(type) {
 	case *ast.Document:
 		visitor.location.inDocument = entering
 	case *ast.Paragraph:
-		visitor.tableName = string(n.Content)
+		if bytez.HasPrefix(n.Content, bytez.StringToReadOnlyBytes(visitor.Table.PrefixTbName)) {
+			visitor.tableName = string(n.Content)
+		}
 	case *ast.Table:
 		if entering {
 			visitor.JsonDoc = append(visitor.JsonDoc, "{")
-			// visitor.JsonDoc = append(visitor.JsonDoc, "\""+visitor.tableName+"\":")
 			visitor.JsonDoc = append(visitor.JsonDoc, quot+"type"+quot+colon+quot+"table"+quot+comma+
 				quot+"name"+quot+colon+quot+visitor.tableName+quot+comma+
 				quot+"data"+quot+colon)
@@ -75,16 +76,22 @@ func (visitor *JsonVisitor) Visit(node ast.Node, entering bool) (status ast.Walk
 			}
 		}
 	case *ast.TableCell:
+
 		if visitor.location.inTableHeader {
 			visitor.Header = append(visitor.Header, string(n.Content))
 		}
 
 		if visitor.location.inTableBody {
-			if !IsAllDigits(n.Content) {
-				n.Content = Quotation(n.Content)
+			if !bytez.IsAllBytesDigits(n.Content) {
+				n.Content = bytez.Quotation(n.Content)
 			}
 
-			visitor.JsonDoc = append(visitor.JsonDoc, "\""+visitor.Header[visitor.columnIndex]+"\":", string(n.Content), ",")
+			tableValue := string(n.Content)
+			if len(n.Content) == 0 {
+				tableValue = quot + visitor.Table.ReplaceEmpty + quot
+			}
+
+			visitor.JsonDoc = append(visitor.JsonDoc, "\""+visitor.Header[visitor.columnIndex]+"\":", tableValue, ",")
 
 			visitor.columnIndex++
 		}
@@ -106,23 +113,6 @@ func (visitor *JsonVisitor) closeJSONObject(closeTag string) {
 	}
 }
 
-func IsAllDigits(data []byte) bool {
-	for _, b := range data {
-		if !unicode.IsDigit(rune(b)) {
-			return false
-		}
-	}
-	return true
-}
-
-func Quotation(slice []byte) (quoted []byte) {
-	quoted = make([]byte, len(slice)+2, len(slice)+2)
-	quoted[0] = 34
-	quoted[len(quoted)-1] = 34
-	copy(quoted[1:], slice)
-	return
-}
-
 func mdToJson(md []byte, optFuncs ...SetOptsFunc) (JsonDocs []string) {
 	extensions := parser.CommonExtensions | parser.AutoHeadingIDs | parser.NoEmptyLineBeforeBlock
 	p := parser.NewWithExtensions(extensions)
@@ -133,19 +123,4 @@ func mdToJson(md []byte, optFuncs ...SetOptsFunc) (JsonDocs []string) {
 	ast.Walk(p.Doc, v)
 
 	return v.JsonDocs
-}
-
-func HasPrefix(a, b []byte) bool {
-	minLen := len(a)
-	if len(b) < minLen {
-		minLen = len(b)
-	}
-
-	for i := 0; i < minLen; i++ {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-
-	return true
 }

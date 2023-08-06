@@ -28,6 +28,7 @@ vendor/
 
 # Configuration for multi-module workspaces in Go
 go.work
+go.work.sum
 
 # IntelliJ IDEA IDE-specific files and folders
 .idea/

@@ -34,6 +34,7 @@ func WithParagraphOptions(paragraph ParagraphOptions) SetOptsFunc {
 
 type TableOptions struct {
 	PrefixTbName string
+	ReplaceEmpty string
 }
 
 func WithTableOptions(table TableOptions) SetOptsFunc {
