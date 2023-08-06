@@ -1,9 +1,9 @@
 package md2json
 
 import (
-	"github.com/gomarkdown/markdown/ast"
-	"github.com/gomarkdown/markdown/parser"
 	"github.com/panhongrainbow/goCodePebblez/bytez"
+	"github.com/panhongrainbow/markdown/ast"
+	"github.com/panhongrainbow/markdown/parser"
 	"strings"
 )
 

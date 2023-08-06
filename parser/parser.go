@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gomarkdown/markdown/ast"
+	"github.com/panhongrainbow/markdown/ast"
 )
 
 // Extensions is a bitmask of enabled parser extensions.

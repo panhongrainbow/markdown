@@ -1,11 +1,11 @@
 /*
 Package html implements HTML renderer of parsed markdown document.
 
-Configuring and customizing a renderer
+# Configuring and customizing a renderer
 
 A renderer can be configured with multiple options:
 
-	import "github.com/gomarkdown/markdown/html"
+	import "github.com/panhongrainbow/markdown/html"
 
 	flags := html.CommonFlags | html.CompletePage | html.HrefTargetBlank
 	opts := html.RendererOptions{
@@ -20,8 +20,8 @@ This is most useful for rendering nodes that allow for design choices, like
 links or code blocks.
 
 	import (
-		"github.com/gomarkdown/markdown/html"
-		"github.com/gomarkdown/markdown/ast"
+		"github.com/panhongrainbow/markdown/html"
+		"github.com/panhongrainbow/markdown/ast"
 	)
 
 	// a very dummy render hook that will output "code_replacements" instead of

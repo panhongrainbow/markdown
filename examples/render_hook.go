@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/gomarkdown/markdown"
-	"github.com/gomarkdown/markdown/ast"
-	"github.com/gomarkdown/markdown/html"
+	"github.com/panhongrainbow/markdown"
+	"github.com/panhongrainbow/markdown/ast"
+	"github.com/panhongrainbow/markdown/html"
 )
 
 // an actual rendering of Paragraph is more complicated

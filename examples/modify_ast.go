@@ -5,10 +5,10 @@ package main
 import (
 	"fmt"
 
-	"github.com/gomarkdown/markdown"
-	"github.com/gomarkdown/markdown/ast"
-	"github.com/gomarkdown/markdown/html"
-	"github.com/gomarkdown/markdown/parser"
+	"github.com/panhongrainbow/markdown"
+	"github.com/panhongrainbow/markdown/ast"
+	"github.com/panhongrainbow/markdown/html"
+	"github.com/panhongrainbow/markdown/parser"
 
 	"strings"
 )
