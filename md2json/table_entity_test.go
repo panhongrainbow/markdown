@@ -3,6 +3,7 @@ package md2json
 import (
 	"encoding/json"
 	"github.com/panhongrainbow/goCodePebblez/bytez"
+	"github.com/panhongrainbow/markdown/syncPool"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -19,20 +20,20 @@ Below is the detailed information about the residents of different towns on the 
 ## Marigold Town
 
 Config Table Marigold Town
-Name   | Age | Phone    | Address
--------|-----|----------|--------------
-Charlie| 31  | 555-1234 | 123 Main St
-Eva    | 27  | 555-4321 | 456 Elm St
+Name   | Age | Phone    | Address    | Job
+-------|-----|----------|------------|--------------
+Charlie| 31  | 555-1234 | 123 Main St| Engineer
+Eva    | 27  | 555-4321 | 456 Elm St | Teacher
 
 (Robert's information is left blank temporarily as he is in the process of changing his phone number.)
 
 ## Oakwood City
 
 Config Table Oakwood City
-Name   | Age | Phone    | Address
--------|-----|----------|--------------
-Robert | 28  |          | 789 Oak St
-Alyssa | 29  | 555-8765 | 101 Pine St
+Name   | Age | Gender | Phone    | Address
+-------|-----|--------|----------|--------------
+Robert | 28  | male   |          | 789 Oak St
+Alyssa | 29  | female | 555-8765 | 101 Pine St
 `
 
 // Test_Check_Json2Table validates table to json conversion with assertions.
@@ -41,8 +42,10 @@ func Test_Check_Json2Table(t *testing.T) {
 	type resident struct {
 		Name    string `json:"Name"`
 		Age     int    `json:"Age"`
+		Gender  string `json:"Gender"`
 		Phone   string `json:"Phone"`
 		Address string `json:"Address"`
+		Job     string `json:"Job"`
 	}
 
 	// Region struct to hold town information.
@@ -84,14 +87,18 @@ func Test_Check_Json2Table(t *testing.T) {
 	// Assertions to validate parsed JSON data for the first resident.
 	assert.Equal(t, "Charlie", collections[0].Data[0].Name)
 	assert.Equal(t, 31, collections[0].Data[0].Age)
+	assert.Equal(t, "", collections[0].Data[0].Gender)
 	assert.Equal(t, "555-1234", collections[0].Data[0].Phone)
 	assert.Equal(t, "123 Main St", collections[0].Data[0].Address)
+	assert.Equal(t, "Engineer", collections[0].Data[0].Job)
 
 	// Assertions to validate parsed JSON data for the second resident.
 	assert.Equal(t, "Eva", collections[0].Data[1].Name)
 	assert.Equal(t, 27, collections[0].Data[1].Age)
+	assert.Equal(t, "", collections[0].Data[1].Gender)
 	assert.Equal(t, "555-4321", collections[0].Data[1].Phone)
 	assert.Equal(t, "456 Elm St", collections[0].Data[1].Address)
+	assert.Equal(t, "Teacher", collections[0].Data[1].Job)
 
 	// Assertions to validate parsed JSON data for the second region.
 	assert.Equal(t, "table", collections[1].Type)
@@ -100,24 +107,31 @@ func Test_Check_Json2Table(t *testing.T) {
 	// Assertions to validate parsed JSON data for the third resident.
 	assert.Equal(t, "Robert", collections[1].Data[0].Name)
 	assert.Equal(t, 28, collections[1].Data[0].Age)
+	assert.Equal(t, "male", collections[1].Data[0].Gender)
 	assert.Equal(t, "-", collections[1].Data[0].Phone)
 	assert.Equal(t, "789 Oak St", collections[1].Data[0].Address)
+	assert.Equal(t, "", collections[1].Data[0].Job)
 
 	assert.Equal(t, "Alyssa", collections[1].Data[1].Name)
 	assert.Equal(t, 29, collections[1].Data[1].Age)
+	assert.Equal(t, "female", collections[1].Data[1].Gender)
 	assert.Equal(t, "555-8765", collections[1].Data[1].Phone)
 	assert.Equal(t, "101 Pine St", collections[1].Data[1].Address)
+	assert.Equal(t, "", collections[1].Data[1].Job)
 }
 
-// 29296 ns/op，31105 ns/op
 func Benchmark_Check_Json2Table(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		// Define table options for conversion.
-		tbOpts := TableOptions{
-			PrefixTbName: "Config Table",
-			ReplaceEmpty: "-",
-		}
+	triggerInit := syncPool.GlobalStringSlice.Get()
+	syncPool.GlobalStringSlice.Put(&triggerInit)
+	// Define table options for conversion.
+	tbOpts := TableOptions{
+		PrefixTbName: "Config Table",
+		ReplaceEmpty: "-",
+		WipePrefix:   true,
+	}
+	b.ResetTimer()
 
+	for i := 0; i < b.N; i++ {
 		// Convert Markdown to JSON using specified options.
 		_ = MdToJson(
 			bytez.StringToReadOnlyBytes(mysticIsle),

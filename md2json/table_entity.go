@@ -4,6 +4,7 @@ import (
 	"github.com/panhongrainbow/goCodePebblez/bytez"
 	"github.com/panhongrainbow/markdown/ast"
 	"github.com/panhongrainbow/markdown/parser"
+	"github.com/panhongrainbow/markdown/syncPool"
 	"strings"
 )
 
@@ -48,7 +49,8 @@ func (visitor *JsonVisitor) Visit(node ast.Node, entering bool) (status ast.Walk
 			visitor.JsonDoc = append(visitor.JsonDoc, quot+"type"+quot+colon+quot+"table"+quot+comma+
 				quot+"name"+quot+colon+quot+visitor.tableName+quot+comma+
 				quot+"data"+quot+colon)
-			visitor.Header = visitor.Header[:0]
+			// visitor.Header = visitor.Header[:0]
+			// syncPool.GlobalStringSlice.Put(&visitor.Header)
 		}
 		visitor.location.inTable = entering
 		lastIndex := len(visitor.JsonDoc) - 1
@@ -59,7 +61,13 @@ func (visitor *JsonVisitor) Visit(node ast.Node, entering bool) (status ast.Walk
 			// Finalize the JSON document for the table and save it.
 			visitor.JsonDoc = append(visitor.JsonDoc, "}")
 			visitor.JsonDocs = append(visitor.JsonDocs, strings.Join(visitor.JsonDoc, ""))
-			visitor.JsonDoc = visitor.JsonDoc[:0]
+			// visitor.JsonDoc = visitor.JsonDoc[:0]
+
+			syncPool.GlobalStringSlice.Put(&visitor.JsonDoc)
+			visitor.JsonDoc = syncPool.GlobalStringSlice.Get()
+
+			syncPool.GlobalStringSlice.Put(&visitor.Header)
+			visitor.Header = syncPool.GlobalStringSlice.Get()
 		}
 	case *ast.TableHeader:
 		visitor.location.inTableHeader = entering

@@ -1,9 +1,15 @@
 package md2json
 
+import "github.com/panhongrainbow/markdown/syncPool"
+
 type SetOptsFunc func(*JsonVisitor)
 
 func NewJsonVisitor(funcs ...SetOptsFunc) (visitor *JsonVisitor) {
-	visitor = new(JsonVisitor)
+	visitor = &JsonVisitor{
+		JsonDocs: syncPool.GlobalStringSlice.Get(),
+		JsonDoc:  syncPool.GlobalStringSlice.Get(),
+		Header:   syncPool.GlobalStringSlice.Get(),
+	}
 
 	for _, eachFunc := range funcs {
 		eachFunc(visitor)
