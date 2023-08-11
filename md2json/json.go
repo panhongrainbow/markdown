@@ -31,7 +31,11 @@ func (visitor *JsonVisitor) Visit(node ast.Node, entering bool) (status ast.Walk
 		visitor.location.inDocument = entering
 	case *ast.Paragraph:
 		if bytez.HasPrefix(n.Content, bytez.StringToReadOnlyBytes(visitor.Table.PrefixTbName)) {
-			visitor.tableName = string(n.Content)
+			if visitor.Table.WipePrefix {
+				visitor.tableName = string(n.Content[len(visitor.Table.PrefixTbName)+1:])
+			} else {
+				visitor.tableName = string(n.Content)
+			}
 		}
 	case *ast.Table:
 		if entering {
@@ -113,7 +117,7 @@ func (visitor *JsonVisitor) closeJSONObject(closeTag string) {
 	}
 }
 
-func mdToJson(md []byte, optFuncs ...SetOptsFunc) (JsonDocs []string) {
+func MdToJson(md []byte, optFuncs ...SetOptsFunc) (JsonDocs []string) {
 	extensions := parser.CommonExtensions | parser.AutoHeadingIDs | parser.NoEmptyLineBeforeBlock
 	p := parser.NewWithExtensions(extensions)
 	p.Block(md)
