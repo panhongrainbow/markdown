@@ -1,72 +1,112 @@
 package md2json
 
 import (
-	"fmt"
 	"github.com/stretchr/testify/assert"
 	"sync"
 	"testing"
 )
 
-func Test_test(t *testing.T) {
-	stringPool := NewStringSlicePool(5)
-
-	// 檢查 Inited 值是否已設置
-	if stringPool.Inited.Load() {
-		fmt.Println("StringSlicePool is initialized.")
-	} else {
-		fmt.Println("StringSlicePool is not initialized.")
-	}
-}
-
-func TestStringSlicePool(t *testing.T) {
-	t.Run("Test Get and Put", func(t *testing.T) {
-		capacity := 5
-		stringPool := NewStringSlicePool(capacity)
-
-		strSlice, err := stringPool.Get()
-		assert.NoError(t, err, "Expected no error from Get")
-
-		strSlice = append(strSlice, "Hello", "World")
-		stringPool.Put(strSlice)
-
-		strSlice2, _ := stringPool.Get()
-		assert.Empty(t, strSlice2, "Expected an empty slice from the pool")
-	})
-
-	t.Run("Test Get on uninitialized pool", func(t *testing.T) {
-		uninitializedPool := &StringSlicePool{} // Create an uninitialized pool
-
-		_, err := uninitializedPool.Get()
-		assert.Error(t, err, "Expected an error for getting from uninitialized pool")
-	})
-}
-
-// go test -run=TestStringSlicePool_Concurrent -race
-func Test_Race_StringSlicePool(t *testing.T) {
-	// Enable data race detection
-	t.Parallel()
-
+// Test_Check_StringSlicePool tests the behavior of StringSlicePool's Get and Put methods.
+func Test_Check_StringSlicePool(t *testing.T) {
+	// Create a new StringSlicePool with a specified capacity.
 	capacity := 5
 	stringPool := NewStringSlicePool(capacity)
 
+	// Test the initial state after Get
+	strSlice := stringPool.Get()
+	assert.Empty(t, strSlice, "Expected an empty slice from the pool")
+
+	// Perform operations on the retrieved slice
+	strSlice = append(strSlice, "Hello", "World")
+
+	// Assert the length and content of the modified slice
+	assert.Len(t, strSlice, 2, "Expected the slice to have 2 elements")
+	assert.Equal(t, "Hello", strSlice[0], "Expected 'Hello' in the first element")
+	assert.Equal(t, "World", strSlice[1], "Expected 'World' in the second element")
+
+	// Put the modified slice back to the pool
+	stringPool.Put(strSlice)
+
+	// Test the state after Put
+	strSlice = stringPool.Get()
+	assert.Empty(t, strSlice, "Expected an empty slice from the pool")
+}
+
+// Test_Race_StringSlicePool runs the test with data race detection using the specified regular expression.
+// go test -run='^\QTest_Race_StringSlicePool\E$' -race
+func Test_Race_StringSlicePool(t *testing.T) {
+	// Enable concurrent execution of the test.
+	t.Parallel()
+
+	// Set the capacity of the string slice pool.
+	capacity := 5
+	stringPool := NewStringSlicePool(capacity)
+
+	// Define the number of goroutines and iterations for testing.
 	const goroutines = 100
 	const iterations = 100
 
+	// Use a WaitGroup to wait for all goroutines to finish.
 	var wg sync.WaitGroup
 
+	// Launch multiple goroutines.
 	for i := 0; i < goroutines; i++ {
 		wg.Add(1)
 		go func() {
+			// Mark the completion of the current goroutine when it finishes.
 			defer wg.Done()
+
+			// Perform iterations on each goroutine.
 			for j := 0; j < iterations; j++ {
-				strSlice, err := stringPool.Get()
-				if err == nil {
-					strSlice = append(strSlice, "Hello", "World")
-					stringPool.Put(strSlice)
-				}
+				// Get a string slice from the pool.
+				strSlice := stringPool.Get()
+
+				// Modify the string slice by appending "Hello" and "World".
+				strSlice = append(strSlice, "Hello", "World")
+
+				// Put the modified string slice back into the pool.
+				stringPool.Put(strSlice)
 			}
 		}()
 	}
 
+	// Wait for all goroutines to finish.
 	wg.Wait()
+}
+
+// Benchmark_Comparator_StringSlicePool compares pool-based and non-pool-based string slice management in Go benchmarks.
+func Benchmark_Comparator_StringSlicePool(b *testing.B) {
+	// Set the capacity of the string slice pool.
+	capacity := 10
+	stringPool := NewStringSlicePool(capacity)
+
+	// Reset the timer before starting the benchmark.
+	b.ResetTimer()
+
+	// Run a sub-benchmark with pool usage.
+	b.Run("WithPool", func(b *testing.B) {
+		// Perform benchmarking for 'b.N' iterations.
+		for i := 0; i < b.N; i++ {
+			// Acquire a string slice from the pool.
+			strSlice := stringPool.Get()
+			// Modify the string slice by appending "Hello" and "World".
+			strSlice = append(strSlice, "Hello", "World")
+			// Return the modified string slice to the pool.
+			stringPool.Put(strSlice)
+		}
+	})
+
+	// Reset the timer before starting the next sub-benchmark.
+	b.ResetTimer()
+
+	// Run a sub-benchmark without pool usage.
+	b.Run("WithoutPool", func(b *testing.B) {
+		// Perform benchmarking for 'b.N' iterations.
+		for i := 0; i < b.N; i++ {
+			// Create a new string slice without using a pool.
+			strSlice := make([]string, 0, capacity)
+			// Modify the string slice by appending "Hello" and "World".
+			strSlice = append(strSlice, "Hello", "World")
+		}
+	})
 }

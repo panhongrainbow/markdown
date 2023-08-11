@@ -56,6 +56,7 @@ func Test_Check_Json2Table(t *testing.T) {
 	tbOpts := TableOptions{
 		PrefixTbName: "Config Table",
 		ReplaceEmpty: "-",
+		WipePrefix:   true,
 	}
 
 	// Convert Markdown to JSON using specified options.
