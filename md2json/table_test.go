@@ -8,10 +8,9 @@ import (
 	"testing"
 )
 
-// Test_Check_Json2Table validates table to json conversion with assertions.
-func Test_Check_Json2Table(t *testing.T) {
-	// Markdown content describing residents in different towns.
-	var markdown = `
+// mysticIsle serves as the test data,
+// containing information about the residents in various regions and towns on the island.
+var mysticIsle = `
 # MysticIsle Residents Information
 
 Welcome to MysticIsle, a place with diverse towns and vibrant communities.
@@ -35,6 +34,9 @@ Name   | Age | Phone    | Address
 Robert | 28  |          | 789 Oak St
 Alyssa | 29  | 555-8765 | 101 Pine St
 `
+
+// Test_Check_Json2Table validates table to json conversion with assertions.
+func Test_Check_Json2Table(t *testing.T) {
 	// Resident struct to hold resident information.
 	type resident struct {
 		Name    string `json:"Name"`
@@ -58,7 +60,7 @@ Alyssa | 29  | 555-8765 | 101 Pine St
 
 	// Convert Markdown to JSON using specified options.
 	jsonDocs := MdToJson(
-		bytez.StringToReadOnlyBytes(markdown),
+		bytez.StringToReadOnlyBytes(mysticIsle),
 		WithTableOptions(tbOpts),
 	)
 
@@ -104,4 +106,21 @@ Alyssa | 29  | 555-8765 | 101 Pine St
 	assert.Equal(t, 29, collections[1].Data[1].Age)
 	assert.Equal(t, "555-8765", collections[1].Data[1].Phone)
 	assert.Equal(t, "101 Pine St", collections[1].Data[1].Address)
+}
+
+// 29296 ns/op，31105 ns/op
+func Benchmark_Check_Json2Table(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		// Define table options for conversion.
+		tbOpts := TableOptions{
+			PrefixTbName: "Config Table",
+			ReplaceEmpty: "-",
+		}
+
+		// Convert Markdown to JSON using specified options.
+		_ = MdToJson(
+			bytez.StringToReadOnlyBytes(mysticIsle),
+			WithTableOptions(tbOpts),
+		)
+	}
 }

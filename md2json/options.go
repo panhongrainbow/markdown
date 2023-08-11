@@ -33,9 +33,10 @@ func WithParagraphOptions(paragraph ParagraphOptions) SetOptsFunc {
 // Options for Table node
 
 type TableOptions struct {
-	PrefixTbName string
-	ReplaceEmpty string
-	WipePrefix   bool
+	PrefixTbName      string
+	ReplaceEmpty      string
+	WipePrefix        bool
+	JsonDocSyncPooLen int
 }
 
 func WithTableOptions(table TableOptions) SetOptsFunc {

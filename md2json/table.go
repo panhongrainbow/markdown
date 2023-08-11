@@ -25,11 +25,15 @@ type JsonVisitor struct {
 	visitorEmbeddedOpts
 }
 
+// Visit visits various nodes in the AST and responding based on the node type and entry status,
+// the objective is to collect data by converting markdown to JSON.
 func (visitor *JsonVisitor) Visit(node ast.Node, entering bool) (status ast.WalkStatus) {
 	switch n := node.(type) {
 	case *ast.Document:
 		visitor.location.inDocument = entering
 	case *ast.Paragraph:
+		// Check if the paragraph content has a prefix matching the table name
+		// and update the visitor's table name accordingly.
 		if bytez.HasPrefix(n.Content, bytez.StringToReadOnlyBytes(visitor.Table.PrefixTbName)) {
 			if visitor.Table.WipePrefix {
 				visitor.tableName = string(n.Content[len(visitor.Table.PrefixTbName)+1:])
@@ -39,6 +43,7 @@ func (visitor *JsonVisitor) Visit(node ast.Node, entering bool) (status ast.Walk
 		}
 	case *ast.Table:
 		if entering {
+			// Start constructing the JSON document for the table.
 			visitor.JsonDoc = append(visitor.JsonDoc, "{")
 			visitor.JsonDoc = append(visitor.JsonDoc, quot+"type"+quot+colon+quot+"table"+quot+comma+
 				quot+"name"+quot+colon+quot+visitor.tableName+quot+comma+
@@ -51,7 +56,7 @@ func (visitor *JsonVisitor) Visit(node ast.Node, entering bool) (status ast.Walk
 			visitor.JsonDoc = visitor.JsonDoc[:lastIndex]
 		}
 		if !entering {
-			// save
+			// Finalize the JSON document for the table and save it.
 			visitor.JsonDoc = append(visitor.JsonDoc, "}")
 			visitor.JsonDocs = append(visitor.JsonDocs, strings.Join(visitor.JsonDoc, ""))
 			visitor.JsonDoc = visitor.JsonDoc[:0]
@@ -65,8 +70,10 @@ func (visitor *JsonVisitor) Visit(node ast.Node, entering bool) (status ast.Walk
 			return
 		}
 		if entering {
+			// Start constructing the JSON array for the table body.
 			visitor.JsonDoc = append(visitor.JsonDoc, "[")
 		} else {
+			// Finalize the JSON array for the table body.
 			visitor.closeJSONObject("]")
 		}
 	case *ast.TableRow:
@@ -74,34 +81,42 @@ func (visitor *JsonVisitor) Visit(node ast.Node, entering bool) (status ast.Walk
 		visitor.columnIndex = 0
 		if visitor.location.inTableBody {
 			if entering {
+				// Start constructing the JSON object for the table row.
 				visitor.JsonDoc = append(visitor.JsonDoc, "{")
 			} else {
+				// Finalize the JSON object for the table row.
 				visitor.closeJSONObject("}")
 			}
 		}
 	case *ast.TableCell:
-
+		// Handle table cell node.
 		if visitor.location.inTableHeader {
+			// Collect the content of table cells in the header.
 			visitor.Header = append(visitor.Header, string(n.Content))
 		}
 
 		if visitor.location.inTableBody {
 			if !bytez.IsAllBytesDigits(n.Content) {
+				// Add quotation marks to non-numeric content.
 				n.Content = bytez.Quotation(n.Content)
 			}
 
 			tableValue := string(n.Content)
 			if len(n.Content) == 0 {
+				// Handle empty cells with replacement.
+				// Because JSON values cannot be left blank, they are replaced according to the configured values.
+				// (JSON 值不能留空，根据配置进行替换)
 				tableValue = quot + visitor.Table.ReplaceEmpty + quot
 			}
 
+			// Construct the JSON key-value pair for the cell content.
 			visitor.JsonDoc = append(visitor.JsonDoc, "\""+visitor.Header[visitor.columnIndex]+"\":", tableValue, ",")
 
 			visitor.columnIndex++
 		}
 		status = ast.Inquired
 	case *ast.TableFooter:
-		// do not thing!
+		// Do nothing for table footer nodes.
 	}
 	return
 }
